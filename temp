@@ -1,0 +1,30 @@
+# Load the SharePoint PnP PowerShell module
+Import-Module SharePointPnPPowerShellOnline
+
+# Set the URL of the SharePoint site
+$siteUrl = "https://your-tenant.sharepoint.com/sites/your-site"
+
+# Set the local path of the file you want to upload
+$filePath = "C:\path\to\file.txt"
+
+# Set the destination library and folder in SharePoint
+$libraryName = "Documents"
+$folderName = "Folder/Subfolder"
+
+# Get the context of the SharePoint site and authenticate
+$ctx = Get-PnPContext
+
+# Get the destination folder in SharePoint
+$folder = Get-PnPFolder -Url $folderName -Library $libraryName
+
+# Get the file name from the local file path
+$fileName = Split-Path $filePath -Leaf
+
+# Upload the file to SharePoint
+Add-PnPFile -Path $filePath -Folder $folder -NewFileName $fileName
+
+# Execute the SharePoint requests
+Invoke-PnPQuery
+
+# Output success message
+Write-Host "File uploaded to SharePoint successfully."
