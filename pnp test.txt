@@ -22,8 +22,14 @@ if ($files.Count -gt 0) {
 
     # Upload the modified file
     $fileBytes = [System.IO.File]::ReadAllBytes($remoteFilePath)
-    $file.Name = [System.IO.Path]::GetFileName($remoteFilePath)
+    $fileName = [System.IO.Path]::GetFileName($remoteFilePath)
     $file.File.SaveBinary($fileBytes)
+    $file.Context.Load($file)
+    $file.Context.ExecuteQuery()
+
+    # Update the file name
+    $file["FileLeafRef"] = $fileName
+    $file.Update()
     $file.Context.ExecuteQuery()
 
     # Check in the file
