@@ -12,38 +12,20 @@ Connect-PnPOnline -Url $siteUrl -UseWebLogin
 $library = Get-PnPList -Identity $libraryName
 
 # Get the Excel file
-$file = Get-PnPFile -Url "/$libraryName/$excelFileName"
+$fileItem = Get-PnPListItem -List $libraryName -Query "<View><Query><Where><Eq><FieldRef Name='FileLeafRef'/><Value Type='Text'>$excelFileName</Value></Eq></Where></Query></View>"
 
-# Load the file
-$context = Get-PnPContext
-$web = Get-PnPWeb
-$fileToUpload = $web.GetFileByServerRelativeUrl($file.ServerRelativeUrl)
-$ctx.Load($fileToUpload)
-$ctx.ExecuteQuery()
+# Update the file properties
+$fileItem["Title"] = $excelFileName
+$fileItem.Update()
 
-# Update the file
-$localCopyPath = "C:\Temp\$excelFileName"
-$localCopy = $fileToUpload.OpenBinaryStream()
-$stream = New-Object IO.FileStream($localCopyPath, [IO.FileMode]::Create)
-$localCopy.Stream.CopyTo($stream)
-$stream.Dispose()
-
-# Set the file properties
-$stream = [System.IO.File]::OpenRead($localCopyPath)
-Set-PnPFile -Url $file.ServerRelativeUrl -Values @{ 'vti_title' = $excelFileName } -Stream $stream -CheckoutIfNeeded
-
-# Check-in the file with version comments
-$checkedInFile = Invoke-PnPSPRestMethod -Method POST -Url "/_api/web/GetFileByServerRelativeUrl('$($file.ServerRelativeUrl)')/CheckIn(comment='$note',checkintype=1)"
+# Check in the file with version comments
+Invoke-PnPSPRestMethod -Method POST -Url "/_api/web/GetFileByServerRelativeUrl('$($fileItem["FileRef"])')/CheckIn(comment='$note',checkintype=1)"
 
 # Set custom semantic version number
 if ($versionNumber) {
-    $checkedInFile.MajorVersionLabel = $versionNumber
-    $checkedInFile.Update()
-    $ctx.ExecuteQuery()
+    $fileItem["SemanticVersion"] = $versionNumber
+    $fileItem.SystemUpdate()
     Write-Host "Updated file version to: $versionNumber"
 }
-
-# Clean up
-Remove-Item $localCopyPath
 
 Write-Host "Excel file updated successfully."
