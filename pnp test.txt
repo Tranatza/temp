@@ -1,51 +1,37 @@
 # Parameters
 $siteUrl = "<site-url>"
 $libraryName = "<library-name>"
-$excelFileName = "<excel-file-name>"
+$folderRelativeUrl = "<folder-relative-url>"
+$fileName = "<file-name>"
+$localFilePath = "<local-file-path>"
 $note = "<note>"
 $versionNumber = "<version-number>"
-$remoteFilePath = "<remote-file-path>"
 
 # Connect to SharePoint Online
 Connect-PnPOnline -Url $siteUrl -UseWebLogin
 
-# Get the SharePoint library
-$library = Get-PnPList -Identity $libraryName
+# Get the SharePoint folder
+$folder = Get-PnPFolder -Url $folderRelativeUrl -Library $libraryName
 
-# Search for the file by name
-$query = "<View><Query><Where><Eq><FieldRef Name='FileLeafRef'/><Value Type='Text'>$excelFileName</Value></Eq></Where></Query></View>"
-$files = Get-PnPListItem -List $libraryName -Query $query
+# Get the file in the folder
+$fileUrl = $folderRelativeUrl + "/" + $fileName
+$file = Get-PnPFile -Url $fileUrl -AsListItem
 
-if ($files.Count -gt 0) {
-    # File found, retrieve the first file object
-    $file = $files[0]
+# Upload the updated file
+$targetFilePath = $folderRelativeUrl + "/" + $fileName
+Add-PnPFile -Path $localFilePath -Folder $folder -FileName $fileName -Overwrite
 
-    # Upload the modified file
-    $fileBytes = [System.IO.File]::ReadAllBytes($remoteFilePath)
-    $fileName = [System.IO.Path]::GetFileName($remoteFilePath)
-    $file.File.SaveBinary($fileBytes)
-    $file.Context.Load($file)
-    $file.Context.ExecuteQuery()
+# Check in the file
+$file = Get-PnPFile -Url $fileUrl -AsListItem
+$file.CheckIn($note, [Microsoft.SharePoint.Client.CheckinType]::MajorCheckIn)
+$file.Context.ExecuteQuery()
 
-    # Update the file name
-    $file["FileLeafRef"] = $fileName
+# Set custom semantic version number
+if ($versionNumber) {
+    $file["SemanticVersion"] = $versionNumber
     $file.Update()
     $file.Context.ExecuteQuery()
-
-    # Check in the file
-    $file.CheckIn("Check-in comment", [Microsoft.SharePoint.Client.CheckinType]::MajorCheckIn)
-    $file.Context.ExecuteQuery()
-
-    # Set custom semantic version number
-    if ($versionNumber) {
-        $file["SemanticVersion"] = $versionNumber
-        $file.Update()
-        $file.Context.ExecuteQuery()
-        Write-Host "Updated file version to: $versionNumber"
-    }
-
-    Write-Host "Excel file updated successfully."
-} else {
-    # File not found
-    Write-Host "File '$excelFileName' not found in the library."
+    Write-Host "Updated file version to: $versionNumber"
 }
+
+Write-Host "Updated file uploaded successfully."
