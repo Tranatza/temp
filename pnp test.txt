@@ -1,7 +1,6 @@
 # Parameters
 $siteUrl = "<site-url>"
-$libraryName = "<library-name>"
-$folderRelativeUrl = "<folder-relative-url>"
+$libraryName = "Documents"
 $fileName = "<file-name>"
 $localFilePath = "<local-file-path>"
 $note = "<note>"
@@ -10,16 +9,15 @@ $versionNumber = "<version-number>"
 # Connect to SharePoint Online
 Connect-PnPOnline -Url $siteUrl -UseWebLogin
 
-# Get the SharePoint folder
-$folder = Get-PnPFolder -Url $folderRelativeUrl -Library $libraryName
+# Get the SharePoint library
+$library = Get-PnPList -Identity $libraryName
 
-# Get the file in the folder
-$fileUrl = $folderRelativeUrl + "/" + $fileName
+# Get the file in the library root
+$fileUrl = "/" + $libraryName + "/" + $fileName
 $file = Get-PnPFile -Url $fileUrl -AsListItem
 
 # Upload the updated file
-$targetFilePath = $folderRelativeUrl + "/" + $fileName
-Add-PnPFile -Path $localFilePath -Folder $folder -FileName $fileName -Overwrite
+Add-PnPFile -Path $localFilePath -Folder $library.RootFolder -FileName $fileName -Overwrite
 
 # Check in the file
 $file = Get-PnPFile -Url $fileUrl -AsListItem
