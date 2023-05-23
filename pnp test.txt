@@ -4,6 +4,7 @@ $libraryName = "<library-name>"
 $excelFileName = "<excel-file-name>"
 $note = "<note>"
 $versionNumber = "<version-number>"
+$remoteFilePath = "<remote-file-path>"
 
 # Connect to SharePoint Online
 Connect-PnPOnline -Url $siteUrl -UseWebLogin
@@ -14,12 +15,8 @@ $library = Get-PnPList -Identity $libraryName
 # Get the Excel file
 $fileItem = Get-PnPListItem -List $libraryName -Query "<View><Query><Where><Eq><FieldRef Name='FileLeafRef'/><Value Type='Text'>$excelFileName</Value></Eq></Where></Query></View>"
 
-# Update the file properties
-$fileItem["Title"] = $excelFileName
-$fileItem.Update()
-
-# Check in the file with version comments
-Invoke-PnPSPRestMethod -Method POST -Url "/_api/web/GetFileByServerRelativeUrl('$($fileItem["FileRef"])')/CheckIn(comment='$note',checkintype=1)"
+# Upload the modified file
+Set-PnPFile -Url $fileItem["FileRef"] -SourceFilePath $remoteFilePath -CheckIn -CheckInComment $note
 
 # Set custom semantic version number
 if ($versionNumber) {
