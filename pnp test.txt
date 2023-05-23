@@ -19,17 +19,25 @@ $files = Get-PnPListItem -List $libraryName -Query $query
 if ($files.Count -gt 0) {
     # File found, retrieve the first file object
     $file = $files[0]
-    
+
     # Upload the modified file
-    Set-PnPFile -Url $file["FileRef"] -SourceFilePath $remoteFilePath -CheckIn -CheckInComment $note
-    
+    $fileBytes = [System.IO.File]::ReadAllBytes($remoteFilePath)
+    $file.Name = [System.IO.Path]::GetFileName($remoteFilePath)
+    $file.File.SaveBinary($fileBytes)
+    $file.Context.ExecuteQuery()
+
+    # Check in the file
+    $file.CheckIn("Check-in comment", [Microsoft.SharePoint.Client.CheckinType]::MajorCheckIn)
+    $file.Context.ExecuteQuery()
+
     # Set custom semantic version number
     if ($versionNumber) {
         $file["SemanticVersion"] = $versionNumber
-        $file.SystemUpdate()
+        $file.Update()
+        $file.Context.ExecuteQuery()
         Write-Host "Updated file version to: $versionNumber"
     }
-    
+
     Write-Host "Excel file updated successfully."
 } else {
     # File not found
