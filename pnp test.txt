@@ -1,7 +1,6 @@
 # Parameters
 $siteUrl = "<site-url>"
 $libraryName = "<library-name>"
-$subfolderUrl = "/<subfolder-path>"
 $excelFileName = "<excel-file-name>"
 $note = "<note>"
 $versionNumber = "<version-number>"
@@ -13,18 +12,26 @@ Connect-PnPOnline -Url $siteUrl -UseWebLogin
 # Get the SharePoint library
 $library = Get-PnPList -Identity $libraryName
 
-# Get the Excel file
-$file = Get-PnPFile -Url "/$libraryName$subfolderUrl/$excelFileName"
+# Search for the file by name
+$query = "<View><Query><Where><Eq><FieldRef Name='FileLeafRef'/><Value Type='Text'>$excelFileName</Value></Eq></Where></Query></View>"
+$files = Get-PnPListItem -List $libraryName -Query $query
 
-# Upload the modified file
-Set-PnPFile -Url $file.ServerRelativeUrl -SourceFilePath $remoteFilePath -CheckIn -CheckInComment $note
-
-# Set custom semantic version number
-if ($versionNumber) {
-    $file.ListItemAllFields["SemanticVersion"] = $versionNumber
-    $file.ListItemAllFields.Update()
-    $file.Context.ExecuteQuery()
-    Write-Host "Updated file version to: $versionNumber"
+if ($files.Count -gt 0) {
+    # File found, retrieve the first file object
+    $file = $files[0]
+    
+    # Upload the modified file
+    Set-PnPFile -Url $file["FileRef"] -SourceFilePath $remoteFilePath -CheckIn -CheckInComment $note
+    
+    # Set custom semantic version number
+    if ($versionNumber) {
+        $file["SemanticVersion"] = $versionNumber
+        $file.SystemUpdate()
+        Write-Host "Updated file version to: $versionNumber"
+    }
+    
+    Write-Host "Excel file updated successfully."
+} else {
+    # File not found
+    Write-Host "File '$excelFileName' not found in the library."
 }
-
-Write-Host "Excel file updated successfully."
