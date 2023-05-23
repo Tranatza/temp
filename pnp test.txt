@@ -1,6 +1,7 @@
 # Parameters
 $siteUrl = "<site-url>"
 $libraryName = "<library-name>"
+$subfolderUrl = "/<subfolder-path>"
 $excelFileName = "<excel-file-name>"
 $note = "<note>"
 $versionNumber = "<version-number>"
@@ -13,15 +14,16 @@ Connect-PnPOnline -Url $siteUrl -UseWebLogin
 $library = Get-PnPList -Identity $libraryName
 
 # Get the Excel file
-$fileItem = Get-PnPListItem -List $libraryName -Query "<View><Query><Where><Eq><FieldRef Name='FileLeafRef'/><Value Type='Text'>$excelFileName</Value></Eq></Where></Query></View>"
+$file = Get-PnPFile -Url "/$libraryName$subfolderUrl/$excelFileName"
 
 # Upload the modified file
-Set-PnPFile -Url $fileItem["FileRef"] -SourceFilePath $remoteFilePath -CheckIn -CheckInComment $note
+Set-PnPFile -Url $file.ServerRelativeUrl -SourceFilePath $remoteFilePath -CheckIn -CheckInComment $note
 
 # Set custom semantic version number
 if ($versionNumber) {
-    $fileItem["SemanticVersion"] = $versionNumber
-    $fileItem.SystemUpdate()
+    $file.ListItemAllFields["SemanticVersion"] = $versionNumber
+    $file.ListItemAllFields.Update()
+    $file.Context.ExecuteQuery()
     Write-Host "Updated file version to: $versionNumber"
 }
 
