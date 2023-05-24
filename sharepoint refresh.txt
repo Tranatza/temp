@@ -1,0 +1,7 @@
+# Uninstall all SharePoint and PnP modules
+Get-Module -ListAvailable -Name "*SharePoint*" | ForEach-Object { Uninstall-Module -Name $_.Name -Force }
+Get-Module -ListAvailable -Name "*PnP*" | ForEach-Object { Uninstall-Module -Name $_.Name -Force }
+
+# Install the latest SharePoint and PnP modules
+Install-Module -Name SharePointPnPPowerShellOnline -Force
+Install-Module -Name SharePointPnPPowerShell2019 -Force
